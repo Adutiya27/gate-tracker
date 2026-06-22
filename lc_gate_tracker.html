@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agra LC Gate Tracker</title>
+  
+  <!-- Load fonts from Google Fonts as requested -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Light Clean Aesthetic CSS Variables */
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --border: #e2e8f0;
+      --text: #475569;
+      --bright: #0f172a;
+      --accent: #2563eb;
+      
+      --open: #16a34a;
+      --open-bg: #dcfce7;
+      --soon: #d97706;
+      --soon-bg: #fef3c7;
+      --closed: #dc2626;
+      --closed-bg: #fee2e2;
+      
+      --font-ui: system-ui, -apple-system, sans-serif;
+      --font-data: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      padding-bottom: 4rem;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection {
+      background-color: rgba(79, 110, 247, 0.3);
+      color: var(--bright);
+    }
+
+    /* Sticky Topbar styling - Professional Polish Theme */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+    }
+
+    .topbar-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .topbar-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      font-size: 1.75rem;
+      line-height: 1;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      color: var(--bright);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text);
+      opacity: 0.8;
+      font-family: var(--font-data);
+      letter-spacing: 0.1em;
+    }
+
+    /* Controls block in Topbar */
+    .controls {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .controls {
+        margin-left: 0;
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+    .time-cluster {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    @media (max-width: 768px) {
+      .time-cluster {
+        align-items: flex-start;
+      }
+    }
+
+    .clock {
+      font-family: var(--font-data);
+      font-size: 1.25rem;
+      color: var(--bright);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .auto-refresh-label {
+      font-size: 0.65rem;
+      opacity: 0.8;
+      color: var(--accent);
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .refresh-btn {
+      background-color: var(--border);
+      border: 1px solid transparent;
+      color: var(--bright);
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease-in-out;
+      touch-action: manipulation;
+    }
+
+    .refresh-btn:hover {
+      background-color: #f1f5f9;
+      border-color: var(--border);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Summary Bar */
+    .summary-bar {
+      max-width: 1200px;
+      margin: 1.5rem auto 0 auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+
+    .summary-chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .summary-chip.open-chip {
+      background-color: var(--open-bg);
+      border-color: rgba(34, 197, 94, 0.2);
+      color: var(--open);
+    }
+
+    .summary-chip.soon-chip {
+      background-color: var(--soon-bg);
+      border-color: rgba(245, 158, 11, 0.2);
+      color: var(--soon);
+    }
+
+    .summary-chip.closed-chip {
+      background-color: var(--closed-bg);
+      border-color: rgba(239, 68, 68, 0.2);
+      color: var(--closed);
+    }
+
+    /* Main Container & Card Grid */
+    .main-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.25rem;
+      padding: 1.25rem 0 2rem 0;
+    }
+
+    @media (max-width: 420px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards - Professional Polish with border-l-4 Left Indicator bar */
+    .card {
+      background-color: var(--panel);
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      border-left: 1px solid var(--border); /* replaced absolute layout to simulate border-l-4 beautifully */
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.2s ease-in-out;
+    }
+
+    /* Left absolute color-coded status bar simulated from .card-top-border */
+    .card-top-border {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      height: 100%;
+    }
+
+    .card-top-border.status-closed { background-color: var(--closed); }
+    .card-top-border.status-soon { background-color: var(--soon); }
+    .card-top-border.status-open { background-color: var(--open); }
+
+    .card-body {
+      padding: 1rem 1.25rem 1.25rem 1.5rem; /* left padding clears the absolute 4px status bar */
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      flex-grow: 1;
+    }
+
+    /* Card Header */
+    .card-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .card-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .gate-badge {
+      font-family: var(--font-data);
+      font-size: 0.65rem;
+      font-weight: 900;
+      color: #ffffff;
+      background-color: var(--accent);
+      opacity: 0.95;
+      padding: 0.15rem 0.35rem;
+      border-radius: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    /* Different backgrounds for gate badges based on nearest top border status sibling */
+    .card-top-border.status-closed ~ .card-body .gate-badge { background-color: var(--closed); color: #ffffff; }
+    .card-top-border.status-soon ~ .card-body .gate-badge { background-color: var(--soon); color: #ffffff; }
+    .card-top-border.status-open ~ .card-body .gate-badge { background-color: var(--open); color: #ffffff; }
+
+    .crossing-name {
+      color: var(--bright);
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .crossing-area {
+      font-size: 0.8rem;
+      color: var(--text);
+      opacity: 0.6;
+    }
+
+    /* Pulse Status Indicator Block */
+    .status-block {
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .status-block.status-bg-closed {
+      background-color: var(--closed-bg);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+
+    .status-block.status-bg-soon {
+      background-color: var(--soon-bg);
+      border: 1px solid rgba(245, 158, 11, 0.15);
+    }
+
+    .status-block.status-bg-open {
+      background-color: var(--open-bg);
+      border: 1px solid rgba(34, 197, 94, 0.15);
+    }
+
+    .status-badge-row {
+      display: flex;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .status-label-closed { color: var(--closed); }
+    .status-label-soon { color: var(--soon); }
+    .status-label-open { color: var(--open); }
+
+    /* Animated status dot */
+    @keyframes pulse-closed {
+      0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      70% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+      100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    @keyframes pulse-soon {
+      0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+      70% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 0 5px rgba(245, 158, 11, 0); }
+      100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 0.4rem;
+    }
+
+    .status-dot.dot-closed {
+      background-color: var(--closed);
+      animation: pulse-closed 0.7s infinite ease-in-out;
+      box-shadow: 0 0 8px var(--closed);
+    }
+
+    .status-dot.dot-soon {
+      background-color: var(--soon);
+      animation: pulse-soon 1.2s infinite ease-in-out;
+      box-shadow: 0 0 8px var(--soon);
+    }
+
+    .status-dot.dot-open {
+      background-color: var(--open);
+    }
+
+    .status-headline {
+      color: var(--bright);
+      font-size: 0.85rem;
+      font-weight: 500;
+      line-height: 1.35;
+      font-family: var(--font-data);
+    }
+
+    .edit-name-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      opacity: 0.5;
+      cursor: pointer;
+      font-size: 1.1rem;
+      margin-left: 0.35rem;
+      transition: all 0.2s;
+    }
+    .edit-name-btn:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    .crossing-name-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-details {
+      display: none;
+      flex-direction: column;
+      gap: 0.85rem;
+      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--border);
+    }
+    .card-footer-collapsible {
+      display: none;
+    }
+    .card-clickable {
+      cursor: pointer;
+    }
+    .card-clickable:hover .crossing-name {
+      color: var(--accent);
+    }
+    .expand-icon {
+      font-size: 0.8rem;
+      color: var(--text);
+      transition: transform 0.2s;
+      margin-left: 0.5rem;
+    }
+
+    /* Track line pill */
+    .track-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background-color: #f1f5f9;
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      width: fit-content;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* Stations Section */
+    .stations-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0.65rem 0;
+    }
+
+    .station-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .station-title {
+      font-size: 0.65rem;
+      opacity: 0.5;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .station-name {
+      color: var(--bright);
+      font-weight: 600;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .station-distance {
+      font-family: var(--font-data);
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+
+    .station-code {
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* Approaching Trains Section */
+    .trains-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .trains-title {
+      font-size: 0.75rem;
+      opacity: 0.5;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: bold;
+    }
+
+    .trains-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .no-trains-notice {
+      font-size: 0.75rem;
+      opacity: 0.5;
+      font-style: italic;
+    }
+
+    .train-pill {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      border: 1px solid transparent;
+      font-family: var(--font-data);
+    }
+
+    .train-pill.t-closed {
+      background-color: var(--closed-bg);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--closed);
+    }
+
+    .train-pill.t-soon {
+      background-color: var(--soon-bg);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: var(--soon);
+    }
+
+    .train-pill.t-open {
+      background-color: var(--open-bg);
+      border-color: rgba(34, 197, 94, 0.3);
+      color: var(--open);
+    }
+
+    .train-info {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-right: 0.5rem;
+    }
+
+    .train-no {
+      font-weight: 700;
+      color: var(--accent);
+      margin-right: 0.35rem;
+    }
+
+    /* Card Footer */
+    .card-footer {
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 1.25rem 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f8fafc;
+    }
+
+    .tracked-count {
+      font-size: 0.75rem;
+      color: var(--text);
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 0.02em;
+    }
+
+    .action-links {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background-color: #ffffff;
+      border: 1px solid var(--border);
+      color: var(--bright);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      text-decoration: none;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+
+    .action-btn:hover {
+      background-color: #f1f5f9;
+      border-color: var(--accent);
+      color: var(--bright);
+    }
+
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(12, 14, 20, 0.85); backdrop-filter: blur(4px);
+      z-index: 1000; display: flex; justify-content: center; align-items: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-content {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1.5rem; width: 90%; max-width: 450px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .card-header-modal {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
+    }
+    .form-group {
+      display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem;
+    }
+    .form-group label {
+      font-size: 0.75rem; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .form-group input {
+      background: var(--bg); border: 1px solid var(--border); color: var(--bright);
+      padding: 0.75rem; border-radius: 4px; font-family: var(--font-ui); font-size: 0.9rem;
+    }
+    .form-group input:focus { outline: none; border-color: var(--accent); }
+    .modal-actions {
+      display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;
+    }
+    .btn-primary {
+      background: var(--accent); color: white; border: none; padding: 0.6rem 1.2rem;
+      border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.8rem;
+    }
+    .btn-secondary {
+      background: transparent; color: var(--text); border: 1px solid var(--border); padding: 0.6rem 1.2rem;
+      border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 0.8rem;
+    }
+
+    /* Bottom Warning Notice */
+    .bottom-notice {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: var(--panel);
+      color: var(--text);
+      opacity: 0.9;
+      border-top: 1px solid var(--border);
+      font-size: 0.7rem;
+      padding: 0.5rem;
+      text-align: center;
+      z-index: 99;
+      line-height: 1.4;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Topbar -->
+  <header class="topbar">
+    <div class="topbar-container">
+      <div class="brand">
+        <span class="brand-icon">🚦</span>
+        <div class="brand-text">
+          <h1 class="brand-title">LC GATE TRACKER</h1>
+          <span class="brand-subtitle">Agra · 6 Crossings</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="refresh-btn" onclick="openAddModal()">
+          <span>➕</span> Add
+        </button>
+        <button class="refresh-btn" id="refresh-btn" onclick="triggerManualRefresh()">
+          <span>↺</span> Refresh
+        </button>
+        <div class="time-cluster">
+          <div class="clock" id="clock-display">00:00:00</div>
+          <span class="auto-refresh-label" id="timer-display">Auto-refreshing in 60s</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Summary Bar showing gate status counts -->
+  <div class="summary-bar" id="summary-bar">
+    <div class="summary-chip open-chip">🟢 OPEN: <span id="summary-open-count">0</span></div>
+    <div class="summary-chip soon-chip">🟡 CLOSING SOON: <span id="summary-soon-count">0</span></div>
+    <div class="summary-chip closed-chip">🔴 CLOSED: <span id="summary-closed-count">0</span></div>
+  </div>
+
+  <!-- Main Card Grid -->
+  <main class="main-container">
+    <div class="grid" id="crossing-grid">
+      <!-- Generated dynamically by script -->
+    </div>
+  </main>
+
+  <!-- Bottom Mock Notice -->
+  <footer class="bottom-notice">
+    ⚠ MOCK TRAINS — Geospatial data is real. Train positions are simulated. Replace fetchLiveTrains() with erail.in / railapi.in calls to go live.
+  </footer>
+
+  <!-- Add Crossing Modal -->
+  <div id="add-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="card-header-modal">
+        <h2 class="crossing-name">Add New Gate</h2>
+        <button class="edit-name-btn" onclick="closeAddModal()" style="font-size: 1.5rem;">×</button>
+      </div>
+      <div class="form-group">
+        <label>Gate Name</label>
+        <input type="text" id="add-name" placeholder="e.g. My Neighborhood Gate" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label>Locality / Area</label>
+        <input type="text" id="add-area" placeholder="e.g. MG Road Junction" autocomplete="off" />
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" id="add-lat" step="0.000001" placeholder="27.1700" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" id="add-lon" step="0.000001" placeholder="77.9800" autocomplete="off" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveNewCrossing()">Save Gate</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Hardcoded LC Gate coordinates in Agra
+    const BASE_CROSSINGS = [
+      {
+        id: 1,
+        name: "Balkeshwar Gate",
+        area: "Balkeshwar / Sikandra West",
+        lat: 27.175170, lon: 77.939618,
+        track: "Agra–Achhnera–Jaipur Line",
+        station_a: { name: "Pathauli",   code: "PTLI", lat: 27.1567, lon: 77.9250 },
+        station_b: { name: "Idgah Agra", code: "IDH",  lat: 27.1732, lon: 77.9990 }
+      },
+      {
+        id: 2,
+        name: "Sikandra Road Gate",
+        area: "Sikandra–Bodla Road",
+        lat: 27.173231, lon: 77.958255,
+        track: "Agra–Achhnera–Jaipur Line",
+        station_a: { name: "Pathauli",   code: "PTLI", lat: 27.1567, lon: 77.9250 },
+        station_b: { name: "Idgah Agra", code: "IDH",  lat: 27.1732, lon: 77.9990 }
+      },
+      {
+        id: 3,
+        name: "Pratap Nagar Gate",
+        area: "Alkapuri Colony, Pratap Nagar",
+        lat: 27.171775, lon: 77.972703,
+        track: "Agra–Bharatpur–Jaipur Line",
+        station_a: { name: "Pathauli",   code: "PTLI", lat: 27.1567, lon: 77.9250 },
+        station_b: { name: "Idgah Agra", code: "IDH",  lat: 27.1732, lon: 77.9990 }
+      },
+      {
+        id: 4,
+        name: "Nalbund Gate",
+        area: "Nalbund Chauraha, MG Road",
+        lat: 27.171273, lon: 77.987198,
+        track: "Agra–Bharatpur–Jaipur Line",
+        station_a: { name: "Idgah Agra",      code: "IDH", lat: 27.1732, lon: 77.9990 },
+        station_b: { name: "Agra Cantonment", code: "AGC", lat: 27.1589, lon: 77.9906 }
+      },
+      {
+        id: 5,
+        name: "Panchkuian Gate",
+        area: "Panchkuian / Dhakran Crossing",
+        lat: 27.171968, lon: 77.990082,
+        track: "Agra–Delhi Chord / Tundla Line",
+        station_a: { name: "Idgah Agra",      code: "IDH", lat: 27.1732, lon: 77.9990 },
+        station_b: { name: "Agra Cantonment", code: "AGC", lat: 27.1589, lon: 77.9906 }
+      },
+      {
+        id: 6,
+        name: "Idgah Gate",
+        area: "Shahganj / Near Idgah Junction",
+        lat: 27.176433, lon: 78.008243,
+        track: "Tundla–Agra Branch Line",
+        station_a: { name: "Idgah Agra", code: "IDH", lat: 27.1732, lon: 77.9990 },
+        station_b: { name: "Agra Fort",  code: "AF",  lat: 27.1833, lon: 78.0187 }
+      }
+    ];
+
+    const AVAILABLE_STATIONS = [
+      { name: "Pathauli",   code: "PTLI", lat: 27.1567, lon: 77.9250 },
+      { name: "Idgah Agra", code: "IDH",  lat: 27.1732, lon: 77.9990 },
+      { name: "Agra Cantonment", code: "AGC", lat: 27.1589, lon: 77.9906 },
+      { name: "Agra Fort",  code: "AF",  lat: 27.1833, lon: 78.0187 }
+    ];
+
+    let userCrossings = [];
+    try {
+      userCrossings = JSON.parse(localStorage.getItem('userCrossings') || '[]');
+    } catch(e) { console.error(e); }
+
+    function getCrossings() {
+      return [...BASE_CROSSINGS, ...userCrossings];
+    }
+
+    // Haversine exact calculation function
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(lat1 * Math.PI/180) *
+                Math.cos(lat2 * Math.PI/180) *
+                Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    // Seeded pseudo-random float generator
+    function seededRandom(seed) {
+      let s = seed;
+      return function() {
+        s = (s * 1664525 + 1013904223) & 0xffffffff;
+        return (s >>> 0) / 0xffffffff;
+      };
+    }
+
+    // Constants for refresh cycles
+    const REFRESH_CYCLE_SECONDS = 15;
+    let countdownSecs = REFRESH_CYCLE_SECONDS;
+    let autoRefreshInterval = null;
+    let clockInterval = null;
+
+    // Real trains mapping pool per station code
+    const STATION_TRAINS = {
+      "PTLI": [
+        { no: "09769", name: "Agra–Jaipur SF Special", speed: 80 },
+        { no: "22987", name: "Jaipur Intercity", speed: 90 },
+        { no: "19019", name: "Dehradun–Mumbai Express", speed: 75 },
+        { no: "12195", name: "Agra Intercity Express", speed: 95 },
+        { no: "54801", name: "Agra–Bayana MEMU", speed: 55 },
+        { no: "54802", name: "Bayana–Agra MEMU", speed: 55 },
+        { no: "14853", name: "Marudhar Express", speed: 70 }
+      ],
+      "IDH": [
+        { no: "12301", name: "Howrah Rajdhani", speed: 110 },
+        { no: "12302", name: "New Delhi Rajdhani", speed: 110 },
+        { no: "12381", name: "Poorva Express", speed: 85 },
+        { no: "22453", name: "Mahamana Express", speed: 100 },
+        { no: "12987", name: "Ajmer Shatabdi", speed: 130 },
+        { no: "14853", name: "Marudhar Express", speed: 70 },
+        { no: "54801", name: "Agra–Bayana MEMU", speed: 55 }
+      ],
+      "AGC": [
+        { no: "12049", name: "Gatimaan Express", speed: 160 },
+        { no: "12050", name: "Gatimaan Express", speed: 160 },
+        { no: "12001", name: "Bhopal Shatabdi", speed: 130 },
+        { no: "12002", name: "Bhopal Shatabdi", speed: 130 },
+        { no: "12627", name: "Karnataka Express", speed: 90 },
+        { no: "22691", name: "Rajdhani Express", speed: 120 },
+        { no: "12615", name: "Grand Trunk Express", speed: 95 }
+      ],
+      "AF": [
+        { no: "12987", name: "Ajmer Shatabdi", speed: 100 },
+        { no: "12988", name: "Ajmer Shatabdi", speed: 100 },
+        { no: "19019", name: "Dehradun–Mumbai Express", speed: 75 },
+        { no: "22987", name: "Jaipur Intercity", speed: 85 }
+      ]
+    };
+
+    // We define deterministic schedule offsets (minutes within a 30-minute cycle) for each crossing.
+    // This distributes train arrivals perfectly so some are open, some are closed, and some are soon.
+    // They will tick down steadily as time flows!
+    const CROSSING_SCHEDULES = {
+      1: { a: 4.5, b: 18.0 },  // Balkeshwar Gate
+      2: { a: 9.0, b: 24.5 },  // Sikandra Road Gate
+      3: { a: 13.5, b: 27.0 }, // Pratap Nagar Gate
+      4: { a: 3.0, b: 16.5 },  // Nalbund Gate
+      5: { a: 11.0, b: 22.0 }, // Panchkuian Gate
+      6: { a: 7.5, b: 29.5 }   // Idgah Gate
+    };
+
+    function getApproachingTrains(crossing, distA, distB) {
+      let schedule = CROSSING_SCHEDULES[crossing.id];
+      if (!schedule) {
+        // Deterministic pseudo-random schedule for custom gates based on ID
+        const offsetA = (crossing.id % 20) + 1;
+        const offsetB = ((crossing.id * 3) % 15) + 10;
+        schedule = { a: offsetA, b: offsetB };
+      }
+      const cycleLength = 30; // 30-minute cycle
+      
+      const nowMs = Date.now();
+      const currentCycleStart = Math.floor(nowMs / (cycleLength * 60000)) * (cycleLength * 60000);
+      const elapsedMinutes = (nowMs - currentCycleStart) / 60000; // continuous float 0.0 to 30.0
+
+      const computedTrains = [];
+
+      // Check Train A (origin station_a)
+      let diffA = schedule.a - elapsedMinutes;
+      if (diffA < -3) diffA += cycleLength;
+      else if (diffA > cycleLength - 3) diffA -= cycleLength;
+
+      // Check Train B (origin station_b)
+      let diffB = schedule.b - elapsedMinutes;
+      if (diffB < -3) diffB += cycleLength;
+      else if (diffB > cycleLength - 3) diffB -= cycleLength;
+
+      // Train A approaching / passing
+      if (diffA <= 25) {
+        const poolA = STATION_TRAINS[crossing.station_a.code] || [];
+        if (poolA.length > 0) {
+          const baseTrain = poolA[crossing.id % poolA.length];
+          const noise = Math.sin(crossing.id + elapsedMinutes) * 3;
+          const speed = Math.round(baseTrain.speed + noise);
+          let distance = 0;
+          if (diffA > 0) {
+            distance = (diffA / 60) * speed;
+            if (distance > distA) distance = distA;
+          }
+          computedTrains.push({
+            no: baseTrain.no,
+            name: baseTrain.name,
+            speed: speed,
+            distance: distance,
+            arrivalTime: diffA,
+            originCode: crossing.station_a.code,
+            originName: crossing.station_a.name
+          });
+        }
+      }
+
+      // Train B approaching / passing
+      if (diffB <= 25) {
+        const poolB = STATION_TRAINS[crossing.station_b.code] || [];
+        if (poolB.length > 0) {
+          const baseTrain = poolB[(crossing.id + 3) % poolB.length];
+          const noise = Math.cos(crossing.id + elapsedMinutes) * 3;
+          const speed = Math.round(baseTrain.speed + noise);
+          let distance = 0;
+          if (diffB > 0) {
+            distance = (diffB / 60) * speed;
+            if (distance > distB) distance = distB;
+          }
+          computedTrains.push({
+            no: baseTrain.no,
+            name: baseTrain.name,
+            speed: speed,
+            distance: distance,
+            arrivalTime: diffB,
+            originCode: crossing.station_b.code,
+            originName: crossing.station_b.name
+          });
+        }
+      }
+
+      // Sort by arrivalTime ascending
+      computedTrains.sort((x, y) => x.arrivalTime - y.arrivalTime);
+      return computedTrains;
+    }
+
+    // Live IST Display
+    function updateClock() {
+      const now = new Date();
+      // Agra is in Indian Standard Time (UTC+5:30)
+      const options = {
+        timeZone: 'Asia/Kolkata',
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      };
+      document.getElementById("clock-display").textContent = now.toLocaleTimeString('en-US', options);
+    }
+
+    // Process all crossings
+    function evaluateAllCrossings() {
+      const results = [];
+
+      getCrossings().forEach(c => {
+        const distA = haversineKm(c.lat, c.lon, c.station_a.lat, c.station_a.lon);
+        const distB = haversineKm(c.lat, c.lon, c.station_b.lat, c.station_b.lon);
+
+        const allTrains = getApproachingTrains(c, distA, distB);
+
+        // Determine critical status using the nearest train
+        let severity = 1; // 1 = OPEN, 2 = CLOSING SOON, 3 = CLOSED
+        let stateCode = "OPEN";
+        let stateLabel = "🟢 OPEN";
+        let headline = "No trains in 8-min window. Gate clear.";
+        let nearestTrain = null;
+
+        if (allTrains.length > 0) {
+          nearestTrain = allTrains[0];
+          const time = nearestTrain.arrivalTime;
+
+          if (time <= 3.0 && time >= -2.0) {
+            // Train arrives within 3 mins or just passed 2 mins ago
+            severity = 3;
+            stateCode = "CLOSED";
+            stateLabel = "🔴 CLOSED";
+            if (time < 0) {
+              headline = `Gate DOWN — #${nearestTrain.no} ${nearestTrain.name} is clearing the crossing.`;
+            } else {
+              headline = `Gate DOWN — #${nearestTrain.no} ${nearestTrain.name} passes in ~${Math.ceil(time)} min.`;
+            }
+          } else if (time > 3.0 && time <= 8.0) {
+            severity = 2;
+            stateCode = "SOON";
+            stateLabel = "🟡 CLOSING SOON";
+            const closingIn = Math.ceil(time - 3.0);
+            headline = `Closing in ~${closingIn} min — #${nearestTrain.no} ${nearestTrain.name} in ~${Math.ceil(time)} min.`;
+          } else {
+            severity = 1;
+            stateCode = "OPEN";
+            stateLabel = "🟢 OPEN";
+            if (time > 8.0 && time <= 20.0) {
+              headline = `#${nearestTrain.no} ${nearestTrain.name} is ~${Math.ceil(time)} min away. Gate is open.`;
+            } else {
+              headline = "No trains in 8-min window. Gate clear.";
+            }
+          }
+        }
+
+        results.push({
+          crossing: c,
+          distA: distA,
+          distB: distB,
+          trains: allTrains,
+          nearestTrain: nearestTrain,
+          severity: severity,
+          stateCode: stateCode,
+          stateLabel: stateLabel,
+          headline: headline
+        });
+      });
+
+      // Sort crossings WORST FIRST (Closed=3 -> Soon=2 -> Open=1), then by arrival time ascending if same
+      results.sort((a, b) => {
+        if (b.severity !== a.severity) {
+          return b.severity - a.severity;
+        }
+        const aTime = a.nearestTrain ? a.nearestTrain.arrivalTime : 9999;
+        const bTime = b.nearestTrain ? b.nearestTrain.arrivalTime : 9999;
+        return aTime - bTime;
+      });
+
+      renderDashboard(results);
+    }
+
+    // Render summary stats and card list
+    function renderDashboard(dataList) {
+      let openCount = 0;
+      let soonCount = 0;
+      let closedCount = 0;
+
+      const gridElement = document.getElementById("crossing-grid");
+      gridElement.innerHTML = "";
+
+      dataList.forEach(item => {
+        // Track counts
+        if (item.stateCode === "CLOSED") closedCount++;
+        else if (item.stateCode === "SOON") soonCount++;
+        else openCount++;
+
+        // Determine border class, background class, label class
+        let borderClass = "status-open";
+        let bgClass = "status-bg-open";
+        let dotClass = "dot-open";
+        let labelClass = "status-label-open";
+
+        if (item.stateCode === "CLOSED") {
+          borderClass = "status-closed";
+          bgClass = "status-bg-closed";
+          dotClass = "dot-closed";
+          labelClass = "status-label-closed";
+        } else if (item.stateCode === "SOON") {
+          borderClass = "status-soon";
+          bgClass = "status-bg-soon";
+          dotClass = "dot-soon";
+          labelClass = "status-label-soon";
+        }
+
+        // Build approaching train pills
+        let trainsHtml = "";
+        if (item.trains.length === 0) {
+          trainsHtml = `<span class="no-trains-notice">No trains in 30-min window</span>`;
+        } else {
+          item.trains.forEach(t => {
+            let pillClass = "t-open";
+            if (t.arrivalTime <= 3.0) pillClass = "t-closed";
+            else if (t.arrivalTime > 3.0 && t.arrivalTime <= 8.0) pillClass = "t-soon";
+
+            let mins = Math.floor(t.arrivalTime);
+            let secs = Math.floor((t.arrivalTime % 1) * 60);
+            let timingStr = t.arrivalTime < 0 ? "Passing" : `${mins}m ${secs}s`;
+
+            trainsHtml += `
+              <div class="train-pill ${pillClass}">
+                <div class="train-info">
+                  <span class="train-no">#${t.no}</span>
+                  <span>${t.name}</span>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight:bold;">${timingStr}</div>
+                    <div style="font-size:0.65rem; opacity:0.8;">${t.distance.toFixed(1)} km · ${t.speed} km/h</div>
+                </div>
+              </div>
+            `;
+          });
+        }
+
+        const savedName = localStorage.getItem('gateName_' + item.crossing.id);
+        const displayName = savedName ? savedName : item.crossing.name;
+        const escapedDefaultName = item.crossing.name.replace(/'/g, "\\'");
+
+        // Generate card HTML code
+        const isCustom = item.crossing.isCustom;
+        const deleteBtnHtml = isCustom ? `<button class="edit-name-btn" style="color:var(--closed);" onclick="event.stopPropagation(); deleteCrossing(${item.crossing.id})" title="Delete Crossing">🗑️</button>` : '';
+
+        const isExpanded = expandedCards.has(item.crossing.id);
+        const cardExpandedClass = isExpanded ? 'expanded' : '';
+        const detailsDisplay = isExpanded ? 'flex' : 'none';
+        const expandTransform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+
+        const cardHtml = `
+          <article class="card ${cardExpandedClass}" id="card-${item.crossing.id}" data-id="${item.crossing.id}">
+            <div class="card-top-border ${borderClass}"></div>
+            <div class="card-body">
+              <div class="card-clickable" onclick="toggleCardDetails(${item.crossing.id})">
+                <div class="card-header">
+                  <div class="card-tag-row" style="justify-content: space-between; width: 100%;">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                      <span class="gate-badge">${isCustom ? 'USER' : 'GATE'} ${item.crossing.id}</span>
+                      <span class="crossing-area">${item.crossing.area}</span>
+                    </div>
+                    <div>
+                      ${deleteBtnHtml}
+                      <span class="expand-icon" id="expand-icon-${item.crossing.id}" style="transform: ${expandTransform}">▼</span>
+                    </div>
+                  </div>
+                  <div class="crossing-name-container">
+                    <h2 class="crossing-name" style="flex-grow:1;">${displayName}</h2>
+                    <button class="edit-name-btn" onclick="event.stopPropagation(); editGateName(${item.crossing.id}, '${escapedDefaultName}')" aria-label="Edit Name" title="Set Local Name">✏️</button>
+                  </div>
+                </div>
+
+                <!-- Real-time Status Badge Box -->
+                <div class="status-block ${bgClass}">
+                  <div class="status-badge-row ${labelClass}">
+                    <span class="status-dot ${dotClass}"></span>
+                    <span>${item.stateCode === 'SOON' ? 'CLOSING SOON' : item.stateCode}</span>
+                  </div>
+                  <p class="status-headline">${item.headline}</p>
+                </div>
+              </div> <!-- end clickable area -->
+
+              <div class="card-details" id="details-${item.crossing.id}" style="display: ${detailsDisplay};">
+                <!-- Track layout pill -->
+                <div class="track-pill">🛤 ${item.crossing.track}</div>
+
+                <!-- Side-by-side flanking stations -->
+                <div class="stations-container">
+                  <div class="station-cell">
+                    <span class="station-title">Station A</span>
+                    <span class="station-name">${item.crossing.station_a.name}</span>
+                    <span class="station-distance">
+                      <span class="station-code">${item.crossing.station_a.code}</span> · ${item.distA.toFixed(2)} km
+                    </span>
+                  </div>
+                  <div class="station-cell">
+                    <span class="station-title">Station B</span>
+                    <span class="station-name">${item.crossing.station_b.name}</span>
+                    <span class="station-distance">
+                      <span class="station-code">${item.crossing.station_b.code}</span> · ${item.distB.toFixed(2)} km
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Approaching Trains -->
+                <div class="trains-section">
+                  <h3 class="trains-title">Approaching Trains</h3>
+                  <div class="trains-list">
+                    ${trainsHtml}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer block with external geo links -->
+            <div class="card-footer card-footer-collapsible" id="footer-${item.crossing.id}" style="display: ${detailsDisplay};">
+              <span class="tracked-count">${item.trains.length} train(s) tracked</span>
+              <div class="action-links">
+                <a href="https://www.google.com/maps?q=${item.crossing.lat},${item.crossing.lon}&z=17" target="_blank" rel="noopener noreferrer" class="action-btn">
+                  📍 Maps
+                </a>
+                <a href="https://www.openstreetmap.org/?mlat=${item.crossing.lat}&mlon=${item.crossing.lon}&zoom=17" target="_blank" rel="noopener noreferrer" class="action-btn">
+                   🗺 OSM
+                </a>
+              </div>
+            </div>
+          </article>
+        `;
+
+        gridElement.insertAdjacentHTML('beforeend', cardHtml);
+      });
+
+      // Update Top Status Stats
+      document.getElementById("summary-open-count").textContent = openCount;
+      document.getElementById("summary-soon-count").textContent = soonCount;
+      document.getElementById("summary-closed-count").textContent = closedCount;
+    }
+
+    const expandedCards = new Set();
+    
+    function toggleCardDetails(id) {
+      const details = document.getElementById('details-' + id);
+      const footer = document.getElementById('footer-' + id);
+      const icon = document.getElementById('expand-icon-' + id);
+      const card = document.getElementById('card-' + id);
+      
+      if (expandedCards.has(id)) {
+        expandedCards.delete(id);
+        details.style.display = 'none';
+        footer.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+        card.classList.remove('expanded');
+      } else {
+        expandedCards.add(id);
+        details.style.display = 'flex';
+        footer.style.display = 'flex';
+        icon.style.transform = 'rotate(180deg)';
+        card.classList.add('expanded');
+      }
+    }
+
+    // Reset periodic timer & run evaluations
+    function runRefreshCycle() {
+      evaluateAllCrossings();
+      countdownSecs = REFRESH_CYCLE_SECONDS;
+      updateCountdownLabel();
+    }
+
+    // Edit Gate Name function
+    function editGateName(id, defaultName) {
+      const currentName = localStorage.getItem('gateName_' + id) || defaultName;
+      const newName = prompt("Enter a local name for Gate " + id + " (leave blank to reset to default):", currentName);
+      if (newName !== null) {
+        const trimmed = newName.trim();
+        if (trimmed === "" || trimmed === defaultName) {
+          localStorage.removeItem('gateName_' + id);
+        } else {
+          localStorage.setItem('gateName_' + id, trimmed);
+        }
+        evaluateAllCrossings(); // re-render immediately
+      }
+    }
+
+    // Update countdown label in UI
+    function updateCountdownLabel() {
+      document.getElementById("timer-display").textContent = `AUTO-REFRESH IN ${countdownSecs}s`;
+    }
+
+    // Trigger manual refresh
+    function triggerManualRefresh() {
+      const btn = document.getElementById("refresh-btn");
+      btn.style.opacity = "0.6";
+      btn.disabled = true;
+
+      // Force evaluate
+      evaluateAllCrossings();
+      
+      // Reset variables
+      countdownSecs = REFRESH_CYCLE_SECONDS;
+      updateCountdownLabel();
+
+      // UI polish, enable back after slight visual delay
+      setTimeout(() => {
+        btn.style.opacity = "1";
+        btn.disabled = false;
+      }, 500);
+    }
+
+    function openAddModal() {
+      document.getElementById('add-modal').classList.add('active');
+    }
+
+    function closeAddModal() {
+      document.getElementById('add-modal').classList.remove('active');
+      document.getElementById('add-name').value = '';
+      document.getElementById('add-area').value = '';
+      document.getElementById('add-lat').value = '';
+      document.getElementById('add-lon').value = '';
+    }
+
+    async function saveNewCrossing() {
+      const name = document.getElementById('add-name').value.trim();
+      const area = document.getElementById('add-area').value.trim();
+      const lat = parseFloat(document.getElementById('add-lat').value);
+      const lon = parseFloat(document.getElementById('add-lon').value);
+
+      if (!name || isNaN(lat) || isNaN(lon)) {
+        alert("Please provide a valid Name, Latitude, and Longitude.");
+        return;
+      }
+
+      const saveBtn = document.querySelector('.btn-primary');
+      const originalText = saveBtn.textContent;
+      saveBtn.textContent = 'Validating...';
+      saveBtn.disabled = true;
+
+      try {
+        // Query Overpass API with a 300-meter radius
+        const query = `[out:json];node(around:300,${lat},${lon})["railway"="level_crossing"];out;`;
+        const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (!data.elements || data.elements.length === 0) {
+          alert("No railway crossing found near these coordinates. Please provide exact and correct coordinates.");
+          saveBtn.textContent = originalText;
+          saveBtn.disabled = false;
+          return;
+        }
+      } catch (error) {
+        console.error("Validation error:", error);
+        alert("Could not validate coordinates at this time. Please check your network connection.");
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+        return;
+      }
+
+      saveBtn.textContent = originalText;
+      saveBtn.disabled = false;
+
+      // Find 2 closest stations
+      const sortedStations = [...AVAILABLE_STATIONS].sort((a, b) => {
+        return haversineKm(lat, lon, a.lat, a.lon) - haversineKm(lat, lon, b.lat, b.lon);
+      });
+      const stationA = sortedStations[0];
+      const stationB = sortedStations[1];
+
+      const newCrossing = {
+        id: Math.floor(Date.now() / 1000), // shorter int ID
+        name: name,
+        area: area || "Custom Location",
+        lat: lat,
+        lon: lon,
+        track: "User Defined Track",
+        isCustom: true,
+        station_a: { name: stationA.name, code: stationA.code, lat: stationA.lat, lon: stationA.lon },
+        station_b: { name: stationB.name, code: stationB.code, lat: stationB.lat, lon: stationB.lon }
+      };
+
+      userCrossings.push(newCrossing);
+      localStorage.setItem('userCrossings', JSON.stringify(userCrossings));
+      
+      closeAddModal();
+      evaluateAllCrossings();
+    }
+
+    function deleteCrossing(id) {
+      if(confirm("Are you sure you want to delete this custom crossing?")) {
+        userCrossings = userCrossings.filter(c => c.id !== id);
+        localStorage.setItem('userCrossings', JSON.stringify(userCrossings));
+        localStorage.removeItem('gateName_' + id); // cleanup custom name if any
+        evaluateAllCrossings();
+      }
+    }
+
+    // Kick-start app cycles
+    function init() {
+      // Clock updates every second
+      updateClock();
+      clockInterval = setInterval(updateClock, 1000);
+
+      // Perform initial evaluation
+      evaluateAllCrossings();
+
+      // Countdown loop (ticks down 1s at a time)
+      autoRefreshInterval = setInterval(() => {
+        countdownSecs--;
+        if (countdownSecs < 0) {
+          runRefreshCycle();
+        } else {
+          updateCountdownLabel();
+        }
+      }, 1000);
+    }
+
+    // Run on startup
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
