@@ -1017,6 +1017,15 @@
       return validTrains;
     }
     
+    const CROSSING_SCHEDULES = {
+      1: { a: 4.5, b: 18.0 },  // Balkeshwar Gate
+      2: { a: 9.0, b: 24.5 },  // Sikandra Road Gate
+      3: { a: 13.5, b: 27.0 }, // Pratap Nagar Gate
+      4: { a: 3.0, b: 16.5 },  // Nalbund Gate
+      5: { a: 11.0, b: 22.0 }, // Panchkuian Gate
+      6: { a: 7.5, b: 29.5 }   // Idgah Gate
+    };
+
     function getDeterministicFallback(crossingId, trainNo, side) {
       // Similar to the old schedule logic, compute a fake time 
       const cycleLength = 30; // 30-minute cycle
