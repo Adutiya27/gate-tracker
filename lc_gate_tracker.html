@@ -903,26 +903,37 @@
     const API_BASE_URL = "https://indian-rail-api-liart.vercel.app/api/v1";
     let liveCache = {}; // Cache to avoid spamming the API
 
-    async function fetchLiveTrainSchedule(trainNumber) {
-      try {
-        if (liveCache[trainNumber] && Date.now() - liveCache[trainNumber].timestamp < 300000) {
-          return liveCache[trainNumber].data; // Use cached data for 5 minutes
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/route?trainNo=${trainNumber}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log("Live Train Data for " + trainNumber + ":", data);
-        
-        liveCache[trainNumber] = { timestamp: Date.now(), data: data };
-        return data;
-      } catch (error) {
-        console.error("Failed to retrieve live telemetry for " + trainNumber + ":", error);
-        return null;
+    function fetchLiveTrainSchedule(trainNumber) {
+      if (liveCache[trainNumber] && Date.now() - liveCache[trainNumber].timestamp < 300000) {
+        return Promise.resolve(liveCache[trainNumber].data); // Use cached data for 5 minutes
       }
+      
+      // Prevent duplicate parallel queries before cache resolves
+      if (window._fetchPromises && window._fetchPromises[trainNumber]) {
+        return window._fetchPromises[trainNumber];
+      }
+      
+      if (!window._fetchPromises) window._fetchPromises = {};
+
+      const fetchPromise = fetch(`${API_BASE_URL}/route?trainNo=${trainNumber}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          console.log("Live Train Data for " + trainNumber + ":", data);
+          liveCache[trainNumber] = { timestamp: Date.now(), data: data };
+          delete window._fetchPromises[trainNumber];
+          return data;
+        })
+        .catch(error => {
+          console.error("Failed to retrieve live telemetry for " + trainNumber + ":", error);
+          delete window._fetchPromises[trainNumber];
+          return null;
+        });
+        
+      window._fetchPromises[trainNumber] = fetchPromise;
+      return fetchPromise;
     }
 
     // Process the live schedule to compute arrival time in minutes from now
@@ -1143,14 +1154,12 @@
 
     // Process all crossings
     async function evaluateAllCrossings() {
-      const results = [];
       const crossings = getCrossings();
       
       const refreshBtn = document.getElementById("refresh-btn");
       if (refreshBtn) refreshBtn.style.opacity = 0.5;
 
-      for (let i = 0; i < crossings.length; i++) {
-        const c = crossings[i];
+      const evalPromises = crossings.map(async (c) => {
         const distA = haversineKm(c.lat, c.lon, c.station_a.lat, c.station_a.lon);
         const distB = haversineKm(c.lat, c.lon, c.station_b.lat, c.station_b.lon);
 
@@ -1195,7 +1204,7 @@
           }
         }
 
-        results.push({
+        return {
           crossing: c,
           distA: distA,
           distB: distB,
@@ -1205,8 +1214,10 @@
           stateCode: stateCode,
           stateLabel: stateLabel,
           headline: headline
-        });
-      } // end loop
+        };
+      });
+
+      const results = await Promise.all(evalPromises);
 
       // Sort crossings WORST FIRST (Closed=3 -> Soon=2 -> Open=1), then by arrival time ascending if same
       results.sort((a, b) => {
@@ -1220,7 +1231,6 @@
 
       renderDashboard(results);
       
-      const refreshBtn = document.getElementById("refresh-btn");
       if (refreshBtn) refreshBtn.style.opacity = 1;
     }
 
