@@ -714,11 +714,11 @@
     </div>
   </header>
 
-  <!-- Summary Bar showing gate status counts -->
-  <div class="summary-bar" id="summary-bar">
-    <div class="summary-chip open-chip">🟢 OPEN: <span id="summary-open-count">0</span></div>
-    <div class="summary-chip soon-chip">🟡 CLOSING SOON: <span id="summary-soon-count">0</span></div>
-    <div class="summary-chip closed-chip">🔴 CLOSED: <span id="summary-closed-count">0</span></div>
+  <!-- Controls Bar -->
+  <div class="controls-bar" style="max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; display: flex; justify-content: flex-start;">
+    <button id="sort-toggle-btn" class="action-btn" onclick="toggleSortMode()" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600;">
+      ⇅ Sort: Custom
+    </button>
   </div>
 
   <!-- Main Card Grid -->
@@ -857,7 +857,7 @@
     }
 
     // Constants for refresh cycles
-    const REFRESH_CYCLE_SECONDS = 15;
+    const REFRESH_CYCLE_SECONDS = 30;
     let countdownSecs = REFRESH_CYCLE_SECONDS;
     let autoRefreshInterval = null;
     let clockInterval = null;
@@ -1152,6 +1152,102 @@
       document.getElementById("clock-display").textContent = now.toLocaleTimeString('en-US', options);
     }
 
+    // Globals for drag and drop / sorting
+    let currentSortMode = localStorage.getItem('sortMode') || 'custom';
+    let customGateOrder = JSON.parse(localStorage.getItem('customGateOrder')) || [];
+
+    function toggleSortMode() {
+      currentSortMode = currentSortMode === 'custom' ? 'status' : 'custom';
+      localStorage.setItem('sortMode', currentSortMode);
+      
+      const btn = document.getElementById("sort-toggle-btn");
+      if (currentSortMode === 'custom') {
+        btn.textContent = "⇅ Sort: Custom";
+        btn.style.color = "var(--text)";
+      } else {
+        btn.textContent = "⚠ Sort: By Status";
+        btn.style.color = "var(--closed)";
+      }
+      
+      evaluateAllCrossings();
+    }
+
+    // Initialize Sort Button State on load
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("sort-toggle-btn");
+      if (currentSortMode === 'custom') {
+        btn.textContent = "⇅ Sort: Custom";
+        btn.style.color = "var(--text)";
+      } else {
+        btn.textContent = "⚠ Sort: By Status";
+        btn.style.color = "var(--closed)";
+      }
+    });
+
+    let draggedItemId = null;
+
+    function handleDragStart(e) {
+      if (currentSortMode !== 'custom') {
+        e.preventDefault(); // Only allow drag in custom mode
+        return;
+      }
+      draggedItemId = e.currentTarget.getAttribute('data-id');
+      e.dataTransfer.effectAllowed = 'move';
+      e.currentTarget.style.opacity = '0.4';
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+    }
+
+    function handleDragEnter(e) {
+      e.preventDefault();
+      let targetCard = e.currentTarget;
+      if (targetCard.classList.contains('card')) {
+        targetCard.style.outline = "2px dashed var(--accent)";
+      }
+    }
+
+    function handleDragLeave(e) {
+      let targetCard = e.currentTarget;
+      if (targetCard.classList.contains('card')) {
+        targetCard.style.outline = "";
+      }
+    }
+
+    function handleDrop(e) {
+      e.stopPropagation();
+      let targetCard = e.currentTarget;
+      targetCard.style.outline = "";
+      
+      const targetId = targetCard.getAttribute('data-id');
+      if (draggedItemId && draggedItemId !== targetId) {
+        // Find all cards current order
+        const cards = document.querySelectorAll('.card');
+        const currentOrderIds = Array.from(cards).map(c => c.getAttribute('data-id'));
+        
+        // Remove dragged item and insert at target
+        const draggedIndex = currentOrderIds.indexOf(draggedItemId);
+        currentOrderIds.splice(draggedIndex, 1);
+        
+        const targetIndex = currentOrderIds.indexOf(targetId);
+        // Insert before or after based on visual position, for simplicity let's insert at targetIndex
+        currentOrderIds.splice(targetIndex, 0, draggedItemId);
+        
+        customGateOrder = currentOrderIds.map(Number);
+        localStorage.setItem('customGateOrder', JSON.stringify(customGateOrder));
+        evaluateAllCrossings(); // Re-render in new order
+      }
+      return false;
+    }
+
+    function handleDragEnd(e) {
+      e.currentTarget.style.opacity = '1';
+      draggedItemId = null;
+    }
+
     // Process all crossings
     async function evaluateAllCrossings() {
       const crossings = getCrossings();
@@ -1219,15 +1315,39 @@
 
       const results = await Promise.all(evalPromises);
 
-      // Sort crossings WORST FIRST (Closed=3 -> Soon=2 -> Open=1), then by arrival time ascending if same
-      results.sort((a, b) => {
-        if (b.severity !== a.severity) {
-          return b.severity - a.severity;
-        }
-        const aTime = a.nearestTrain ? a.nearestTrain.arrivalTime : 9999;
-        const bTime = b.nearestTrain ? b.nearestTrain.arrivalTime : 9999;
-        return aTime - bTime;
-      });
+      // Ensure customGateOrder has all items if first time
+      if (customGateOrder.length === 0 || customGateOrder.length !== results.length) {
+         const newIds = results.map(r => r.crossing.id);
+         // Merge existing order with new ids
+         const mergedOrder = [...customGateOrder];
+         newIds.forEach(id => {
+           if (!mergedOrder.includes(id)) mergedOrder.push(id);
+         });
+         customGateOrder = mergedOrder;
+         localStorage.setItem('customGateOrder', JSON.stringify(customGateOrder));
+      }
+
+      if (currentSortMode === 'status') {
+        // Sort crossings WORST FIRST (Closed=3 -> Soon=2 -> Open=1), then by arrival time ascending if same
+        results.sort((a, b) => {
+          if (b.severity !== a.severity) {
+            return b.severity - a.severity;
+          }
+          const aTime = a.nearestTrain ? a.nearestTrain.arrivalTime : 9999;
+          const bTime = b.nearestTrain ? b.nearestTrain.arrivalTime : 9999;
+          return aTime - bTime;
+        });
+      } else {
+        // Sort by Custom Order
+        results.sort((a, b) => {
+          const indexA = customGateOrder.indexOf(a.crossing.id);
+          const indexB = customGateOrder.indexOf(b.crossing.id);
+          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+          if (indexA !== -1) return -1;
+          if (indexB !== -1) return 1;
+          return a.crossing.id - b.crossing.id; // fallback
+        });
+      }
 
       renderDashboard(results);
       
@@ -1310,14 +1430,14 @@
         const expandTransform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
 
         const cardHtml = `
-          <article class="card ${cardExpandedClass}" id="card-${item.crossing.id}" data-id="${item.crossing.id}">
+          <article class="card ${cardExpandedClass}" id="card-${item.crossing.id}" data-id="${item.crossing.id}" draggable="true" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragend="handleDragEnd(event)" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)">
             <div class="card-top-border ${borderClass}"></div>
             <div class="card-body">
               <div class="card-clickable" onclick="toggleCardDetails(${item.crossing.id})">
                 <div class="card-header">
                   <div class="card-tag-row" style="justify-content: space-between; width: 100%;">
                     <div style="display:flex; align-items:center; gap:0.5rem;">
-                      <span class="gate-badge">${isCustom ? 'USER' : 'GATE'} ${item.crossing.id}</span>
+                      <span class="gate-badge" style="cursor: grab; user-select: none;" title="Drag to reorder">☷</span>
                       <span class="crossing-area">${item.crossing.area}</span>
                     </div>
                     <div>
@@ -1391,10 +1511,7 @@
         gridElement.insertAdjacentHTML('beforeend', cardHtml);
       });
 
-      // Update Top Status Stats
-      document.getElementById("summary-open-count").textContent = openCount;
-      document.getElementById("summary-soon-count").textContent = soonCount;
-      document.getElementById("summary-closed-count").textContent = closedCount;
+      // We removed the top stats bar, so no need to update those stats.
     }
 
     const expandedCards = new Set();
